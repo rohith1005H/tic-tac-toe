@@ -19,24 +19,62 @@ const Player = (name, symbol) => {
     return {name, symbol};
 }
 
+const DisplayController = (() => {
+    const renderBoard = () => {
+      const board = gameBoard.getBoard();
+      const cells = document.querySelectorAll('.cell');
+      cells.forEach((cell, index) => {
+        cell.textContent = board[index] || '';
+      });
+    };
+  
+    const updateStatus = (message) => {
+      const statusElement = document.getElementById('status');
+      statusElement.textContent = message;
+    };
+  
+    const mainDisplay = () => {
+      const gameContainer = document.getElementById('game-container');
+      gameContainer.innerHTML = '';
+
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.index = i;
+        cell.addEventListener('click', () => {
+          const result = Game.playTurn(i);
+          updateStatus(result);
+          renderBoard();
+        });
+        gameContainer.appendChild(cell);
+      }
+  
+      renderBoard();
+      updateStatus(`${Game.getGameStatus().currentPlayer}'s turn`);
+    };
+  
+    return { mainDisplay, renderBoard, updateStatus };
+})();
+
 const Game = (() => {
     let players = [];
-    let playerindx;
-    let gameover;
+    let playerIndex;
+    let gameOver;
 
-    const base = (player1, player2) => {
+    const base = (player1 = "Player 1", player2 = "Player 2") => {
         players = [
             Player(player1, 'X'), Player(player2, 'O')
         ];
-        playerindx = 0;
-        gameover = false;
+        playerIndex = 0;
+        gameOver = false;
         gameBoard.resetBoard();
+        DisplayController.mainDisplay();
     };
 
-    const getCurrentPlayer = () => players[playerindx];
+    const getCurrentPlayer = () => players[playerIndex];
 
     const switchPlayer = () => {
-        playerindx = 1 - playerindx;
+        playerIndex = 1 - playerIndex;
     };
 
     const checkWin = () => {
@@ -53,33 +91,37 @@ const Game = (() => {
         });
     };
 
-    const playTurn = (indx) => {
-        if(gameover) return "Game over";
+    const playTurn = (index) => {
+        if(gameOver) return "Game over";
 
         const player = getCurrentPlayer();
-        if(gameBoard.move(indx, player.symbol)){
+        if(gameBoard.move(index, player.symbol)){
             if(checkWin()){
-                gameover = true;
+                gameOver = true;
                 return `${player.name} won`;
             } else if(gameBoard.isFull()){
-                gameover = true;
+                gameOver = true;
                 return "It's a draw";
             } else{
                 switchPlayer();
-                return `${player.name}'s turn`;
+                return `${getCurrentPlayer().name}'s turn`;
             }
         }
         return "Move invalid, try again";
     };
 
-    const getGamestat = () => {
+    const getGameStatus = () => {
         return {
             board : gameBoard.getBoard(),
             currentPlayer : getCurrentPlayer().name,
-            gameOver : gameover
+            gameOver : gameOver
         };
     };
-    return {base, playTurn, getGamestat};
+    return {base, playTurn, getGameStatus};
 })();
 
-Game.base("Rohith", "Some other bitch");
+Game.base("Player 1", "Player 2");
+
+document.getElementById('reset-button').addEventListener('click', () => {
+    Game.base("Player 1", "Player 2");
+});
